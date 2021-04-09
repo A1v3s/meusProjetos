@@ -1,0 +1,171 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# # Coleta de Dados e adicionar no MySQL
+# Os arquivos estão disponiveis para downloads no site da receita federal, mas não possuem delimitadores internos, existe um arquivo com o layout para auxiliar.
+# Outro trabalho será baixar os 20 arquivos fazer a leitura individual, linha por linha, separando informações que são de nosso interesse .
+
+# ### layout da tabela receita no mySQL
+# 
+
+# ## Conectar ao MySQL 
+
+# In[1]:
+
+
+#Importando conector MySQL
+
+import mysql.connector
+
+
+# 
+
+# In[2]:
+
+
+#Login ao banco de dados
+
+mydb = mysql.connector.connect(
+    host='localhost',
+    user='root',
+    password='igti',
+    database='db_barueri'
+)
+
+print(mydb)
+
+mycursor = mydb.cursor()
+
+
+# # 
+
+# In[3]:
+
+
+#Retorna todas as tabelas criados no seu esquema de Banco de Dados 
+
+mycursor.execute("SHOW TABLES")
+
+for db in mycursor:
+    print(db)
+
+
+# 
+
+# In[6]:
+
+
+import os
+
+from tkinter  import filedialog
+
+filenames = filedialog.askopenfilenames()
+print(filenames)
+
+
+# In[7]:
+
+
+from datetime import date
+
+# Abrir arquivos Texto
+tamanho = len(filenames)
+conta = 0
+selecao = 0
+
+while(conta < tamanho):
+
+    arquivo = open(filenames[conta], 'r')
+    print(arquivo.name + '  /  '+  "Seleção: " + str(selecao))
+
+    for linha in arquivo:
+        
+        entrada = linha[0:2]
+        
+        lnh = linha[-600:]
+        quintaparte =  lnh[0:173]
+        codigo_municipio = quintaparte[83:87]
+        
+        if entrada == '1F' and codigo_municipio == '6213':
+
+            selecao += 1
+
+            primeiraparte = linha[0:150]
+        
+            lnh = linha[-1050:]
+            segundaparte =  lnh[0:150]
+        
+            lnh = linha[-900:]
+            terceiraparte = lnh[0:150]
+        
+            lnh = linha[-750:]
+            quartaparte =  lnh[0:150]
+        
+            lnh = linha[-600:]
+            quintaparte =  lnh[0:173]
+        
+            lnh = linha[-450:]
+            sextaparte =  lnh[22:175]
+        
+            lnh = linha[-300:]
+            setimaparte =  lnh[0:150]
+        
+            cnpj = primeiraparte[3:17]
+            
+            razao_Social = primeiraparte[18:155]
+            fantasia = segundaparte[17:72]
+            situacao_Cadastral = segundaparte[72:74]
+            data_Situacao = segundaparte[74:82]
+#--------->                                   
+            motivo_Situacao = segundaparte[82:86]
+            CNAE = terceiraparte[74:81]
+            data_inicio = terceiraparte[66:74]
+#--------->            
+            natureza_juridica = int(terceiraparte[62:66])
+            logadouro = (terceiraparte[81:150] + ',' + quartaparte[11:14])
+            codigo_municipio = quintaparte[83:87]
+            bairro = quintaparte[23:73]
+            CEP = quintaparte[73:81]
+            UF = quintaparte[81:83]
+            municipio = quintaparte[87:137]
+            telefone1 = quintaparte[137:149]
+            telefone2 = quintaparte[149:161]
+            telefone3 = quintaparte[161:173]
+            email = sextaparte[1:116]
+            responsavel = sextaparte[116:118]
+            capital_social = float(sextaparte[118:132])
+            porte_emp = sextaparte[132:134]
+            opcao_Simples = sextaparte[134:135]
+#--------->
+            data_opcao_Simples = sextaparte[135:143]
+#--------->            
+            data_exclusao = sextaparte[143:151]
+            excAno = data_exclusao[0:4]
+            excMes = data_exclusao[4:6]
+            excDia = data_exclusao[6:8]
+            dataexclusao = (excAno+'-'+excMes+'-'+excDia)
+            if excAno != '0000' and excMes != '00' and excDia != '00':
+                dataexclusao = date.fromisoformat((excAno+'-'+excMes+'-'+excDia))
+            else:
+                excAno = '0000'
+                excMes = '00'
+                excDia = '00'
+           
+            opcao_MEI = sextaparte[151:152]
+#---------> inserindo dados na tabela
+            mycursor.execute ("INSERT INTO tb_barueri (cnpj, razao_social, fantasia, situacao_cadastral, data_situacao, motivo_situacao, natureza_juridica, data_inicio_atividade, cnea_fiscal, logradouro, bairro, cep, uf, codigo_municipio, municipio, telefone1, telefone2, telefone3, email, qualif_responsavel, capital_social, porte_empresa, opcao_simples, data_opcao_simples, data_exclusao_simples, opcao_mei) VALUES (%s, %s, %s,%s, %s, %s,%s, %s, %s,%s, %s, %s,%s, %s, %s, %s, %s,%s, %s, %s,%s, %s, %s,%s, %s, %s);", (cnpj, razao_Social, fantasia, situacao_Cadastral, data_Situacao, motivo_Situacao, natureza_juridica, data_inicio , CNAE, logadouro, bairro, CEP, UF, codigo_municipio, municipio, telefone1, telefone2, telefone3, email, responsavel, capital_social, porte_emp, opcao_Simples, data_opcao_Simples, dataexclusao, opcao_MEI))
+
+# --------> Fazer a confirmação da inserção
+            mydb.commit()
+        
+    conta += 1
+    arquivo.close()
+        
+
+
+# In[3]:
+
+
+#mycursor.execute ("DELETE  FROM db_barueri.tb_barueri")
+#mydb.commit()
+
